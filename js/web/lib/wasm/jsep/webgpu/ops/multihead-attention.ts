@@ -323,6 +323,10 @@ export const multiHeadAttention = (context: ComputeContext, attributes: Attentio
   const relativePositionBias = getInput(context.inputs, 5);
   const pastKey = getInput(context.inputs, 6);
   const pastValue = getInput(context.inputs, 7);
+
+  if (attributes.outputEdges < 3 && pastKey === undefined) {
+    context.outputCount = attributes.outputEdges;
+  }
   if (query.dims.length === 5) {
     throw new Error('Packed QKV is not implemented');
   }

@@ -143,7 +143,7 @@ static common::Status DeserializeTensorProto(const Env& env, const std::basic_st
   if (external_data_loader != nullptr) {
     ORT_RETURN_IF_ERROR(utils::LoadExtDataToTensorFromTensorProto(env, proto_path, tensor_proto,
                                                                   *external_data_loader, *p_tensor));
-  } else {
+  }
 
   auto device_type = (alloc != nullptr) ? alloc->Info().device.Type() : m->GetAllocInfo().device.Type();
 

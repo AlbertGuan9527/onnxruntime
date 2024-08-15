@@ -67,6 +67,7 @@ export interface AttentionAttrs {
   doRotary: number;
   qkvHiddenSizes: number[];
   pastPresentShareBuffer: boolean;
+  outputEdges: number;
 }
 
 const validateAttentionInputs = (inputs: readonly TensorView[], attributes: AttentionAttrs): AttentionParameters => {
@@ -613,9 +614,6 @@ export const applyAttention =
     (context: ComputeContext, q: TensorView, k: TensorView, v: TensorView, _maskIndex: TensorView|undefined,
      _past: TensorView|undefined, pastKey: TensorView|undefined, pastValue: TensorView|undefined,
      relativePositionBias: TensorView|undefined, parameters: AttentionParameters, attributes: AttentionAttrs) => {
-      if (pastKey === undefined) {
-        context.outputCount = 1;
-      }
       const outputCount = context.outputCount;
       const pastSequenceLength =
           parameters.kvNumHeads !== undefined || outputCount > 1 ? parameters.pastSequenceLength : 0;
