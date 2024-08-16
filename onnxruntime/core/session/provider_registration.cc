@@ -132,6 +132,16 @@ ORT_API_STATUS_IMPL(OrtApis::SessionOptionsAppendExecutionProvider,
 #else
     status = create_not_supported_status();
 #endif
+  } else if (strcmp(provider_name, "WebGPU") == 0) {
+#if defined(USE_WEBGPU)
+    std::string preferred_layout;
+    if (options->value.config_options.TryGetConfigEntry("preferredLayout", preferred_layout)) {
+      provider_options["preferred_layout"] = preferred_layout;
+    }
+    options->provider_factories.push_back(WebGpuProviderFactoryCreator::Create(provider_options, &(options->value)));
+#else
+    status = create_not_supported_status();
+#endif
   } else if (strcmp(provider_name, "AZURE") == 0) {
 #if defined(USE_AZURE)
     options->provider_factories.push_back(AzureProviderFactoryCreator::Create(provider_options));
