@@ -29,16 +29,16 @@ common::Status DataTransfer::CopyTensor(const Tensor& src, Tensor& dst) const {
     if (dst_device.Type() == OrtDevice::GPU) {
       if (src_device.Type() == OrtDevice::GPU) {
         // copy from GPU to GPU
-        GetContext().BufferManager().MemCpy(static_cast<WGPUBuffer>(const_cast<void*>(src_data)),
-                                            static_cast<WGPUBuffer>(dst_data), bytes);
+        context_.BufferManager().MemCpy(static_cast<WGPUBuffer>(const_cast<void*>(src_data)),
+                                        static_cast<WGPUBuffer>(dst_data), bytes);
       } else {
         // copy from CPU to GPU
-        GetContext().BufferManager().Upload(const_cast<void*>(src_data), static_cast<WGPUBuffer>(dst_data), bytes);
+        context_.BufferManager().Upload(const_cast<void*>(src_data), static_cast<WGPUBuffer>(dst_data), bytes);
       }
     } else /* if (src_device.Type() == OrtDevice::GPU) */ {
       // copy from GPU to CPU
-      ORT_RETURN_IF_ERROR(GetContext().Wait(
-          GetContext().BufferManager().Download(static_cast<WGPUBuffer>(const_cast<void*>(src_data)), dst_data, bytes)));
+      ORT_RETURN_IF_ERROR(context_.Wait(
+          context_.BufferManager().Download(static_cast<WGPUBuffer>(const_cast<void*>(src_data)), dst_data, bytes)));
     }
   }
 

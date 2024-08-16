@@ -11,11 +11,12 @@ namespace webgpu {
 
 class GpuBufferAllocator : public IAllocator {
  public:
-  GpuBufferAllocator()
+  GpuBufferAllocator(const WebGpuContext& context)
       : IAllocator(
             OrtMemoryInfo(WEBGPU_BUFFER, OrtAllocatorType::OrtDeviceAllocator,
                           OrtDevice(OrtDevice::GPU, OrtDevice::MemType::DEFAULT, 0),
-                          0, OrtMemTypeDefault)) {
+                          0, OrtMemTypeDefault)),
+        context_{context} {
   }
 
   virtual void* Alloc(size_t size) override;
@@ -24,6 +25,7 @@ class GpuBufferAllocator : public IAllocator {
 
  private:
   AllocatorStats stats_;
+  const WebGpuContext& context_;
 };
 
 }  // namespace webgpu

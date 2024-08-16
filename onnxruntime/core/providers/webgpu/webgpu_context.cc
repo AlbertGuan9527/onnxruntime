@@ -42,9 +42,8 @@ wgpu::RequiredLimits GetAvailableRequiredLimits(const wgpu::Adapter& adapter) {
   return required_limits;
 }
 
-void WebGpuContext::Init() {
-  static std::once_flag init_flag;
-  std::call_once(init_flag, [this]() {
+void WebGpuContext::Initialize() {
+  std::call_once(init_flag_, [this]() {
     // Initialization.Step.1 - Create wgpu::Instance
 
     wgpu::InstanceDescriptor instance_desc{};
@@ -96,9 +95,23 @@ void WebGpuContext::Init() {
   });
 }
 
-WebGpuContext& GetContext() {
-  static WebGpuContext context;
-  return context;
+Status WebGpuContext::Wait(wgpu::Future f) const {
+  auto status = instance_.WaitAny(f, UINT64_MAX);
+  if (status == wgpu::WaitStatus::Success) {
+    return Status::OK();
+  }
+  return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to wait for the operation:", uint32_t(status));
+}
+
+WebGpuContext& WebGpuContextFactory::GetOrCreateContext(int32_t context_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto it = contexts_.find(context_id);
+  if (it == contexts_.end()) {
+    auto context = std::make_unique<WebGpuContext>();
+    it = contexts_.emplace(context_id, std::move(context)).first;
+  }
+  return *it->second;
 }
 
 }  // namespace webgpu

@@ -718,8 +718,11 @@ std::unique_ptr<KernelRegistry> RegisterKernels() {
 
 using namespace webgpu;
 
-WebGpuExecutionProvider::WebGpuExecutionProvider(const WebGpuExecutionProviderInfo& info, const SessionOptions* session_options)
+WebGpuExecutionProvider::WebGpuExecutionProvider(const WebGpuContext& context,
+                                                 const WebGpuExecutionProviderInfo& info,
+                                                 const SessionOptions* session_options)
     : IExecutionProvider{kWebGpuExecutionProvider, OrtDevice(OrtDevice::GPU, OrtDevice::MemType::DEFAULT, 0)},
+      context_(context),
       preferred_data_layout_{info.data_layout} {
   if (session_options) {
     enable_graph_capture_ = session_options->config_options.GetConfigOrDefault("enableGraphCapture", "false") == "true";
@@ -729,9 +732,9 @@ WebGpuExecutionProvider::WebGpuExecutionProvider(const WebGpuExecutionProviderIn
 
 std::vector<AllocatorPtr> WebGpuExecutionProvider::CreatePreferredAllocators() {
   AllocatorCreationInfo gpuBufferAllocatorCreationInfo([&](int) {
-    return std::make_unique<webgpu::GpuBufferAllocator>();
+    return std::make_unique<webgpu::GpuBufferAllocator>(context_);
   },
-                                                    0, false);
+                                                       0, false);
   return std::vector<AllocatorPtr>{CreateAllocator(gpuBufferAllocatorCreationInfo)};
 }
 
@@ -786,7 +789,7 @@ std::shared_ptr<KernelRegistry> WebGpuExecutionProvider::GetKernelRegistry() con
 }
 
 std::unique_ptr<onnxruntime::IDataTransfer> WebGpuExecutionProvider::GetDataTransfer() const {
-  return std::make_unique<webgpu::DataTransfer>();
+  return std::make_unique<webgpu::DataTransfer>(context_);
 }
 
 WebGpuExecutionProvider::~WebGpuExecutionProvider() {

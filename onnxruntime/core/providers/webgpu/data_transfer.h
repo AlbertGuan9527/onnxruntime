@@ -11,12 +11,15 @@ namespace webgpu {
 
 class DataTransfer : public IDataTransfer {
  public:
-  DataTransfer() {};
-  ~DataTransfer() {};
+  DataTransfer(const WebGpuContext& context) : context_{context} {};
+  ~DataTransfer(){};
 
   bool CanCopy(const OrtDevice& src_device, const OrtDevice& dst_device) const override;
 
   common::Status CopyTensor(const Tensor& src, Tensor& dst) const override;
+
+ private:
+  const WebGpuContext& context_;
 };
 
 }  // namespace webgpu

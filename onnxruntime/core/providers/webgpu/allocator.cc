@@ -17,22 +17,16 @@ void* GpuBufferAllocator::Alloc(size_t size) {
     return nullptr;
   }
 
-  // GetContext().Device().CreateBuffer()
-
-  //void* p = EM_ASM_PTR({ return Module.jsepAlloc($0); }, size);
-  ORT_ENFORCE(false, "not implemented");
+  auto buffer = context_.BufferManager().Create(size);
 
   stats_.num_allocs++;
-  stats_.bytes_in_use += size;
-  return nullptr;
+  return buffer.Get();
 }
 
 void GpuBufferAllocator::Free(void* p) {
   if (p != nullptr) {
-    //size_t size = (size_t)(void*)EM_ASM_PTR({ return Module.jsepFree($0); }, p);
-    ORT_ENFORCE(false, "not implemented");
-
-    //stats_.bytes_in_use -= size;
+    context_.BufferManager().Release(static_cast<WGPUBuffer>(p));
+    stats_.num_allocs--;
   }
 }
 

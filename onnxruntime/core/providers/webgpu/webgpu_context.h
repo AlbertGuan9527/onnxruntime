@@ -18,37 +18,41 @@ namespace onnxruntime {
 namespace webgpu {
 
 // Class WebGpuContext includes all necessary resources for the context.
-class WebGpuContext {
+class WebGpuContext final {
  public:
-  WebGpuContext() {}
+  void Initialize();
 
-  void Init();
+  Status Wait(wgpu::Future f) const;
 
-  Status Wait(wgpu::Future f) {
-    auto status = instance_.WaitAny(f, UINT64_MAX);
+  const wgpu::Adapter& Adapter() const { return adapter_; }
+  const wgpu::Device& Device() const { return device_; }
 
-    if (status == wgpu::WaitStatus::Success) {
-      return Status::OK();
-    }
-
-    return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to wait for the operation:", uint32_t(status));
-  }
-
-  // wgpu::Instance GetInstance() { return instance_; }
-  wgpu::Adapter Adapter() { return adapter_; }
-  wgpu::Device Device() { return device_; }
-
-  IBufferManager& BufferManager() { return *buffer_mgr_; }
+  const IBufferManager& BufferManager() const { return *buffer_mgr_; }
 
  private:
-  wgpu::Instance instance_;
+  WebGpuContext() {}
+
+  std::once_flag init_flag_;
+
+  mutable wgpu::Instance instance_;
   wgpu::Adapter adapter_;
   wgpu::Device device_;
 
   std::unique_ptr<IBufferManager> buffer_mgr_;
+
+  friend class WebGpuContextFactory;
 };
 
-WebGpuContext& GetContext();
+class WebGpuContextFactory {
+ public:
+  static WebGpuContext& GetOrCreateContext(int32_t context_id = 0);
+
+ private:
+  WebGpuContextFactory() {}
+
+  static std::unordered_map<int32_t, std::unique_ptr<WebGpuContext>> contexts_;
+  static std::mutex mutex_;
+};
 
 }  // namespace webgpu
 }  // namespace onnxruntime
