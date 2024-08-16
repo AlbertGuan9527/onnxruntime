@@ -324,9 +324,12 @@ export const multiHeadAttention = (context: ComputeContext, attributes: Attentio
   const pastKey = getInput(context.inputs, 6);
   const pastValue = getInput(context.inputs, 7);
 
+  /*
   if (attributes.outputEdges < 3 && pastKey === undefined) {
+    console.log("Setting outputCount to 1");
     context.outputCount = attributes.outputEdges;
   }
+  */
   if (query.dims.length === 5) {
     throw new Error('Packed QKV is not implemented');
   }

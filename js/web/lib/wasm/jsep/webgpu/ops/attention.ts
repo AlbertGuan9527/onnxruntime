@@ -67,7 +67,6 @@ export interface AttentionAttrs {
   doRotary: number;
   qkvHiddenSizes: number[];
   pastPresentShareBuffer: boolean;
-  outputEdges: number;
 }
 
 const validateAttentionInputs = (inputs: readonly TensorView[], attributes: AttentionAttrs): AttentionParameters => {
@@ -614,11 +613,24 @@ export const applyAttention =
     (context: ComputeContext, q: TensorView, k: TensorView, v: TensorView, _maskIndex: TensorView|undefined,
      _past: TensorView|undefined, pastKey: TensorView|undefined, pastValue: TensorView|undefined,
      relativePositionBias: TensorView|undefined, parameters: AttentionParameters, attributes: AttentionAttrs) => {
-      const outputCount = context.outputCount;
       const pastSequenceLength =
-          parameters.kvNumHeads !== undefined || outputCount > 1 ? parameters.pastSequenceLength : 0;
+          parameters.kvNumHeads !== undefined || context.outputCount > 1 ? parameters.pastSequenceLength : 0;
       const totalSequenceLength = pastSequenceLength + parameters.kvSequenceLength;
 
+      //
+      // context.outputCount comes from KernelOp and is the number of outputs the op has.
+      // If they are not consumed we need to make sure the shaders don't generate the output
+      // since there is no buffer for it.
+      // We check by requesting the output and if not there we'll adjust context.outputCount
+      //
+      if (parameters.kvNumHeads === undefined) {
+        const presentKeyShape = [parameters.batchSize, parameters.numHeads, totalSequenceLength, parameters.headSize];
+        const output1 = context.output(1, presentKeyShape);
+        if (output1 == 0) {
+          context.outputCount = 1;
+        }
+      }
+      const outputCount = context.outputCount;
       const inputsK = (parameters.kvNumHeads === undefined && outputCount > 1 && pastKey) ? [q, k, pastKey] : [q, k];
       if (relativePositionBias) {
         inputsK.push(relativePositionBias);
@@ -640,7 +652,7 @@ export const applyAttention =
 
       // Run AttrionScore
       const inputsV =
-          (parameters.kvNumHeads === undefined && outputCount > 1 && pastValue) ? [probs, v, pastValue] : [probs, v];
+          (parameters.kvNumHeads === undefined && context.outputCount > 1 && pastValue) ? [probs, v, pastValue] : [probs, v];
       context.compute(
           createVxAttentionScoreProgramInfo(
               context, probs, v, outputCount > 1 && pastValue ? pastValue : undefined, parameters, pastSequenceLength),
